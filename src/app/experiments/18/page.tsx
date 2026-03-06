@@ -81,11 +81,9 @@ const DistortionMaterial = shaderMaterial(
 extend({ DistortionMaterial });
 
 // Add TypeScript support for the custom material
-declare global {
-    namespace JSX {
-        interface IntrinsicElements {
-            distortionMaterial: any;
-        }
+declare module "@react-three/fiber" {
+    interface ThreeElements {
+        distortionMaterial: any;
     }
 }
 

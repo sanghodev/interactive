@@ -81,11 +81,9 @@ const MosaicTemporalMaterial = shaderMaterial(
 
 extend({ MosaicTemporalMaterial });
 
-declare global {
-    namespace JSX {
-        interface IntrinsicElements {
-            mosaicTemporalMaterial: any;
-        }
+declare module "@react-three/fiber" {
+    interface ThreeElements {
+        mosaicTemporalMaterial: any;
     }
 }
 

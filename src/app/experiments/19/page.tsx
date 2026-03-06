@@ -111,11 +111,9 @@ const ParticleMaterial = shaderMaterial(
 
 extend({ ParticleMaterial });
 
-declare global {
-    namespace JSX {
-        interface IntrinsicElements {
-            particleMaterial: any;
-        }
+declare module "@react-three/fiber" {
+    interface ThreeElements {
+        particleMaterial: any;
     }
 }
 
@@ -217,15 +215,11 @@ function PointCloudGrid() {
             <bufferGeometry>
                 <bufferAttribute
                     attach="attributes-position"
-                    count={positions.length / 3}
-                    array={positions}
-                    itemSize={3}
+                    args={[positions, 3]}
                 />
                 <bufferAttribute
                     attach="attributes-reference"
-                    count={uvs.length / 2}
-                    array={uvs}
-                    itemSize={2}
+                    args={[uvs, 2]}
                 />
             </bufferGeometry>
             {/* Using our custom class material ensures robust uniform reactivity */}
