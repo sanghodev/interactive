@@ -258,6 +258,15 @@ const experiments = [
     image: "/thumbnails/28.png",
     category: "Graphics & Motion",
     tags: ["Generative", "Tendrils", "Chromatic"],
+  },
+  {
+    id: "29",
+    title: "Dual Identity",
+    description: "A premium transition experience between two contrasting personas. Explores the duality of self through a mouse-driven horizontal reveal.",
+    date: "Mar 10, 2026",
+    image: "/thumbnails/29.png",
+    category: "Interactions",
+    tags: ["Landing Page", "Motion", "Duality"],
   }
 ];
 
