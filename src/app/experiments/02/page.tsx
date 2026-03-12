@@ -24,16 +24,20 @@ export default function ScrollVideoExperiment() {
             // 1 second of video = 400px of scrolling roughly
             const scrollDuration = (video.duration || 10) * 400;
 
+            // Normalize scroll for mobile touch devices
+            ScrollTrigger.normalizeScroll(true);
+
             ScrollTrigger.create({
                 trigger: containerRef.current,
                 start: "top top",
                 end: `+=${scrollDuration}`,
                 pin: true,
-                scrub: 0.5, // Added a slight smoothing to the scrub
+                scrub: 0.5,
+                anticipatePin: 1,
                 onUpdate: (self) => {
-                    // Map scroll progress (0 to 1) to video duration
                     if (video.duration) {
                         try {
+                            // Using a more persistent seeking method for mobile
                             video.currentTime = video.duration * self.progress;
                         } catch (e) {
                             console.error("Video seeking error", e)

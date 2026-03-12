@@ -27,15 +27,29 @@ export default function DualIdentityExperiment() {
   useEffect(() => {
     setMounted(true);
     
-    const handleMouseMove = (e: MouseEvent) => {
+    const handleMove = (clientX: number) => {
       if (!containerRef.current) return;
       const { left, width } = containerRef.current.getBoundingClientRect();
-      const x = (e.clientX - left) / width;
+      const x = (clientX - left) / width;
       mouseX.set(Math.max(0, Math.min(1, x)));
     };
 
+    const handleMouseMove = (e: MouseEvent) => handleMove(e.clientX);
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length > 0) {
+        handleMove(e.touches[0].clientX);
+      }
+    };
+
     window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
+    window.addEventListener("touchmove", handleTouchMove, { passive: false });
+    window.addEventListener("touchstart", handleTouchMove, { passive: false });
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("touchmove", handleTouchMove);
+      window.removeEventListener("touchstart", handleTouchMove);
+    };
   }, [mouseX]);
 
   if (!mounted) return null;
