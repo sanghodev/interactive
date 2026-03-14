@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useLayoutEffect } from "react";
 import { motion, Variants, AnimatePresence } from "framer-motion";
-import { Sparkles, ArrowUpRight, Beaker, Calendar } from "lucide-react";
+import { Sparkles, ArrowUpRight, Beaker, Calendar, Download } from "lucide-react";
 import Link from "next/link"; // Import next/link
 
 // Mock data for the design experiments archive
@@ -267,6 +267,27 @@ const experiments = [
     image: "/thumbnails/29.png",
     category: "Interactions",
     tags: ["Landing Page", "Motion", "Duality"],
+    downloadUrl: "/downloads/exp29.zip"
+  },
+  {
+    id: "30",
+    title: "Pixel Reveal",
+    description: "A dynamic noise-driven pixel transition between dual identities. Uses canvas rendering and procedural waves to break the boundary of self.",
+    date: "Mar 13, 2026",
+    image: "/thumbnails/30.png",
+    category: "Graphics & Motion",
+    tags: ["Canvas", "Procedural", "Transition"],
+    downloadUrl: "/downloads/exp30.zip"
+  },
+  {
+    id: "31",
+    title: "Perlin Reveal",
+    description: "An advanced procedural transition utilizing 2D Perlin Noise. Explores dynamic, grid-based assembly where pixels harmonize through programmed randomness.",
+    date: "Mar 13, 2026",
+    image: "/thumbnails/31.png",
+    category: "Interactions",
+    tags: ["Canvas", "Perlin Noise", "Algorithm"],
+    downloadUrl: "/downloads/exp31.zip"
   }
 ];
 
@@ -461,72 +482,87 @@ export default function DesignArchive() {
                 initial="hidden"
                 animate="visible"
                 exit={{ opacity: 0, scale: 0.9, filter: "blur(10px)", transition: { duration: 0.3 } }}
-                className="group flex flex-col h-full"
+                className="group flex flex-col h-full relative"
               >
+                {/* Main Card Navigation Link (Overlay) */}
                 <Link
                   href={`/experiments/${exp.id}`}
                   onClick={handleCardClick}
-                  className="flex flex-col h-full focus:outline-none"
-                >
-                  {/* Card Container */}
-                  <div className="relative glass-panel rounded-[1.5rem] overflow-hidden shadow-2xl transition-all duration-700 ease-out flex-grow hover:shadow-indigo-500/10 hover:-translate-y-2 cursor-pointer border border-white/5 group-hover:border-white/10 group-hover:bg-white/[0.03]">
+                  className="absolute inset-0 z-20"
+                />
 
-                    {/* Image Section */}
-                    <div className="relative h-48 sm:h-56 xl:h-64 w-full overflow-hidden bg-neutral-900">
-                      <motion.img
-                        src={exp.image}
-                        alt={exp.title}
-                        className="object-cover w-full h-full z-10 relative opacity-80 transition-transform duration-[1.5s] ease-[0.16,1,0.3,1] group-hover:scale-110 group-hover:opacity-100"
-                        loading="lazy"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-black/20 to-transparent z-20" />
+                {/* Card Container */}
+                <div className="relative glass-panel rounded-[1.5rem] overflow-hidden shadow-2xl transition-all duration-700 ease-out flex-grow group-hover:shadow-indigo-500/10 group-hover:-translate-y-2 border border-white/5 group-hover:border-white/10 group-hover:bg-white/[0.03] flex flex-col h-full pointer-events-none">
 
-                      {/* Top Badges */}
-                      <div className="absolute top-4 left-4 z-30 flex flex-col gap-2">
-                        <span className="self-start px-2.5 py-1 text-[10px] font-bold tracking-widest uppercase rounded bg-white/10 backdrop-blur-md text-white border border-white/20">
-                          {exp.category}
-                        </span>
-                      </div>
+                  {/* Image Section */}
+                  <div className="relative h-48 sm:h-56 xl:h-64 w-full overflow-hidden bg-neutral-900">
+                    <motion.img
+                      src={exp.image}
+                      alt={exp.title}
+                      className="object-cover w-full h-full z-10 relative opacity-80 transition-transform duration-[1.5s] ease-[0.16,1,0.3,1] group-hover:scale-110 group-hover:opacity-100"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-black/20 to-transparent z-20" />
 
-                      {/* Hover Arrow */}
-                      <div className="absolute top-4 right-4 z-30 w-10 h-10 rounded-full bg-indigo-500/20 backdrop-blur-md border border-indigo-500/30 flex items-center justify-center opacity-0 -translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-500 shadow-lg group-hover:shadow-indigo-500/20">
+                    {/* Top Badges */}
+                    <div className="absolute top-4 left-4 z-30 flex flex-col gap-2">
+                      <span className="self-start px-2.5 py-1 text-[10px] font-bold tracking-widest uppercase rounded bg-white/10 backdrop-blur-md text-white border border-white/20">
+                        {exp.category}
+                      </span>
+                    </div>
+
+                    {/* Hover Arrow & Download Button */}
+                    <div className="absolute top-4 right-4 z-30 flex gap-2 pointer-events-auto">
+                      {exp.downloadUrl && (
+                        <motion.a
+                          href={exp.downloadUrl}
+                          download
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-10 h-10 rounded-full bg-emerald-500/20 backdrop-blur-md border border-emerald-500/30 flex items-center justify-center opacity-0 -translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-500 shadow-lg hover:shadow-emerald-500/20 cursor-pointer"
+                        >
+                          <Download className="w-5 h-5 text-emerald-300" />
+                        </motion.a>
+                      )}
+                      <div className="w-10 h-10 rounded-full bg-indigo-500/20 backdrop-blur-md border border-indigo-500/30 flex items-center justify-center opacity-0 -translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-500 shadow-lg group-hover:shadow-indigo-500/20">
                         <ArrowUpRight className="w-5 h-5 text-indigo-300" />
                       </div>
                     </div>
+                  </div>
 
-                    {/* Content Section */}
-                    <div className="p-6 relative z-30 flex flex-col flex-grow">
-                      <h3 className="text-xl font-bold text-white mb-3 leading-tight group-hover:text-indigo-300 transition-colors duration-300">
-                        {exp.title}
-                      </h3>
-                      <p className="text-xs text-neutral-400 leading-relaxed mb-6 flex-grow">
-                        {exp.description}
-                      </p>
+                  {/* Content Section */}
+                  <div className="p-6 relative z-30 flex flex-col flex-grow">
+                    <h3 className="text-xl font-bold text-white mb-3 leading-tight group-hover:text-indigo-300 transition-colors duration-300">
+                      {exp.title}
+                    </h3>
+                    <p className="text-xs text-neutral-400 leading-relaxed mb-6 flex-grow">
+                      {exp.description}
+                    </p>
 
-                      {/* Footer tags & metadata */}
-                      <div className="flex flex-col gap-4 mt-auto">
-                        <div className="flex flex-wrap gap-1.5">
-                          {exp.tags.map((tag, idx) => (
-                            <span key={idx} className="px-2 py-1 text-[10px] font-medium tracking-wide rounded-md bg-white/5 text-neutral-300 border border-white/5">
-                              {tag}
-                            </span>
-                          ))}
+                    {/* Footer tags & metadata */}
+                    <div className="flex flex-col gap-4 mt-auto">
+                      <div className="flex flex-wrap gap-1.5">
+                        {exp.tags.map((tag, idx) => (
+                          <span key={idx} className="px-2 py-1 text-[10px] font-medium tracking-wide rounded-md bg-white/5 text-neutral-300 border border-white/5">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+
+                      <div className="flex items-center justify-between text-[11px] font-medium text-neutral-500 pt-4 border-t border-white/5">
+                        <div className="flex items-center gap-1.5">
+                          <Calendar className="w-3.5 h-3.5" />
+                          {exp.date.split(",")[0]}
                         </div>
-
-                        <div className="flex items-center justify-between text-[11px] font-medium text-neutral-500 pt-4 border-t border-white/5">
-                          <div className="flex items-center gap-1.5">
-                            <Calendar className="w-3.5 h-3.5" />
-                            {exp.date.split(",")[0]}
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <Beaker className="w-3.5 h-3.5" />
-                            EXP-{exp.id}
-                          </div>
+                        <div className="flex items-center gap-1.5">
+                          <Beaker className="w-3.5 h-3.5" />
+                          EXP-{exp.id}
                         </div>
                       </div>
                     </div>
                   </div>
-                </Link>
+                </div>
               </motion.div>
             ))}
           </AnimatePresence>
