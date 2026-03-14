@@ -288,6 +288,15 @@ const experiments = [
     category: "Interactions",
     tags: ["Canvas", "Perlin Noise", "Algorithm"],
     downloadUrl: "/downloads/exp31.zip"
+  },
+  {
+    id: "32",
+    title: "Ink & Timber",
+    description: "A whimsical interactive sketchbook world. Blends physical photography with digital sprites and animated portals on a wooden timber surface.",
+    date: "Mar 14, 2026",
+    image: "/thumbnails/32.png",
+    category: "Graphics & Motion",
+    tags: ["Interactive", "Photography", "Whimsical"],
   }
 ];
 
