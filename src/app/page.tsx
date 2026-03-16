@@ -342,6 +342,15 @@ const experiments = [
     image: "/thumbnails/exp37.png",
     category: "Graphics & Motion",
     tags: ["Particle Morphing", "Parametric", "Spectral"],
+  },
+  {
+    id: "38",
+    title: "Stairway to Heaven",
+    description: "An ethereal infinite 3D perspective climb. Ascend through glowing celestial steps into a vanishing point of eternal light.",
+    date: "Mar 16, 2026",
+    image: "/thumbnails/exp38.png",
+    category: "Graphics & Motion",
+    tags: ["3D Perspective", "Infinite Scroll", "Ethereal"],
   }
 ];
 
