@@ -297,6 +297,24 @@ const experiments = [
     image: "/thumbnails/32.png",
     category: "Graphics & Motion",
     tags: ["Interactive", "Photography", "Whimsical"],
+  },
+  {
+    id: "33",
+    title: "Aether Bloom",
+    description: "Generative bioluminescent flora blooming in an etheric fluid space. A tribute to the vernal pulse of spring.",
+    date: "Mar 16, 2026",
+    image: "/thumbnails/exp33.png",
+    category: "Generative Art",
+    tags: ["Canvas", "Phyllotaxis", "Particles"],
+  },
+  {
+    id: "34",
+    title: "Zen Pulsar",
+    description: "A minimalist interactive study on persistent growth. High-contrast monochromatic expansion driven by spring-based physics.",
+    date: "Mar 16, 2026",
+    image: "/thumbnails/exp34.png",
+    category: "Minimalism",
+    tags: ["Canvas", "Interaction", "Spring Physics"],
   }
 ];
 
