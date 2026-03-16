@@ -315,6 +315,33 @@ const experiments = [
     image: "/thumbnails/exp34.png",
     category: "Minimalism",
     tags: ["Canvas", "Interaction", "Spring Physics"],
+  },
+  {
+    id: "35",
+    title: "Parallel Vision",
+    description: "An interactive 'dimension rift' experiment. Move the mouse to reveal a parallel world through a cinematic radial mask.",
+    date: "Mar 16, 2026",
+    image: "/thumbnails/exp35.png",
+    category: "Video Cinematic",
+    tags: ["Radial Mask", "Interaction", "Dual Video"],
+  },
+  {
+    id: "36",
+    title: "Ant Colony",
+    description: "A profound simulation of collective intelligence. 2,000 algorithmic agents emerge into complex pheromone networks, guided by your presence.",
+    date: "Mar 16, 2026",
+    image: "/thumbnails/exp36.png",
+    category: "Generative Art",
+    tags: ["Agent-Based", "Pheromones", "Emergent"],
+  },
+  {
+    id: "37",
+    title: "Luminous Menagerie",
+    description: "A celestial particle experience where thousands of spectral points morph into animal silhouettes, creating a harmony of light and motion.",
+    date: "Mar 16, 2026",
+    image: "/thumbnails/exp37.png",
+    category: "Graphics & Motion",
+    tags: ["Particle Morphing", "Parametric", "Spectral"],
   }
 ];
 
