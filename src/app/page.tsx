@@ -387,6 +387,15 @@ const experiments = [
     image: "/thumbnails/exp42.png",
     category: "Physics & UI",
     tags: ["Hand-Drawn", "Animation", "Interactive Art"],
+  },
+  {
+    id: "43",
+    title: "Freefall",
+    description: "A first-person skydiving experience. Tilt your body through the clouds and deploy your parachute before it's too late.",
+    date: "May 20, 2026",
+    image: "/thumbnails/exp43.png",
+    category: "Physics & UI",
+    tags: ["Skydiving", "First Person", "Physics"],
   }
 ];
 
