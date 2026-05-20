@@ -378,6 +378,15 @@ const experiments = [
     image: "/thumbnails/exp41.png",
     category: "Graphics & Motion",
     tags: ["Canvas", "Constellations", "Interactive Discovery"],
+  },
+  {
+    id: "42",
+    title: "Living Sketchbook",
+    description: "An interactive notebook canvas where drawn scribbles boil and jitter like traditional frame-by-frame animation.",
+    date: "May 20, 2026",
+    image: "/thumbnails/exp42.png",
+    category: "Physics & UI",
+    tags: ["Hand-Drawn", "Animation", "Interactive Art"],
   }
 ];
 
