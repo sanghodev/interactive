@@ -133,36 +133,64 @@ export default function CelestialMenagerie() {
             }));
         };
 
-        // Init Constellations mapping relative coords to absolute pixel coords
-        // Spread them around by adding slight offsets and scales
+        // Init Constellations: Generate 30 random constellations using the templates
         const initConstellations = () => {
-            const offsets = [
-                { dx: 0, dy: 0, scale: 1 },         // Center-ish
-                { dx: -0.3 * w, dy: 0.1 * h, scale: 0.8 }, // Bottom Left
-                { dx: 0.3 * w, dy: -0.15 * h, scale: 0.85 } // Top Right
-            ];
+            const TOTAL_CONSTELLATIONS = 30;
+            constellationsRef.current = [];
 
-            constellationsRef.current = CONSTELLATIONS.map((c, i) => {
-                const off = offsets[i % offsets.length];
-                const cw = w * 0.4 * off.scale;
-                const ch = h * 0.4 * off.scale;
-                const cx = (w / 2) - (cw / 2) + off.dx;
-                const cy = (h / 2) - (ch / 2) + off.dy;
+            for (let i = 0; i < TOTAL_CONSTELLATIONS; i++) {
+                // Pick a random template
+                const template = CONSTELLATIONS[Math.floor(Math.random() * CONSTELLATIONS.length)];
+                
+                // Random scale between 0.3 and 0.7
+                const scale = Math.random() * 0.4 + 0.3;
+                const cw = w * 0.4 * scale;
+                const ch = h * 0.4 * scale;
+                
+                // Random position across the screen (allowing slight off-screen overflow)
+                const cx = Math.random() * (w + cw) - cw;
+                const cy = Math.random() * (h + ch) - ch;
+                
+                // Random rotation
+                const angle = Math.random() * Math.PI * 2;
+                const cosA = Math.cos(angle);
+                const sinA = Math.sin(angle);
 
-                return {
-                    data: c,
-                    completed: false,
-                    opacity: 0,
-                    stars: c.points.map(p => ({
-                        origX: cx + p.x * cw,
-                        origY: cy + p.y * ch,
-                        x: cx + p.x * cw,
-                        y: cy + p.y * ch,
+                // Generate roman numeral suffix for variety
+                const numerals = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"];
+                const suffix = numerals[Math.floor(Math.random() * numerals.length)];
+                const instanceName = `${template.name} ${suffix}`;
+
+                const stars = template.points.map(p => {
+                    // Center points to 0,0 before rotation
+                    const centeredX = p.x - 0.5;
+                    const centeredY = p.y - 0.5;
+
+                    // Rotate
+                    const rotX = centeredX * cosA - centeredY * sinA;
+                    const rotY = centeredX * sinA + centeredY * cosA;
+
+                    // Scale and translate
+                    const finalX = cx + (rotX + 0.5) * cw;
+                    const finalY = cy + (rotY + 0.5) * ch;
+
+                    return {
+                        origX: finalX,
+                        origY: finalY,
+                        x: finalX,
+                        y: finalY,
                         active: false,
                         activationPulse: 0
-                    }))
-                };
-            });
+                    };
+                });
+
+                constellationsRef.current.push({
+                    data: { ...template, name: instanceName },
+                    completed: false,
+                    opacity: 0,
+                    stars: stars
+                });
+            }
         };
 
         initBgStars();
@@ -361,7 +389,7 @@ export default function CelestialMenagerie() {
                         <Star className={`w-4 h-4 ${discoveredCount >= 3 ? "text-cyan-400 fill-cyan-400" : "text-white/20"}`} />
                     </div>
                     <span className="text-[10px] uppercase tracking-widest text-white/40">
-                        {discoveredCount} of 3 Constellations Found
+                        {discoveredCount} of 30 Constellations Found
                     </span>
                     <p className="mt-2 text-xs text-white/20 font-light italic">Trace the hidden stars to reveal ancient myths.</p>
                 </footer>
