@@ -351,6 +351,33 @@ const experiments = [
     image: "/thumbnails/exp38.png",
     category: "Graphics & Motion",
     tags: ["3D Perspective", "Infinite Scroll", "Ethereal"],
+  },
+  {
+    id: "39",
+    title: "The Prime Butcher",
+    description: "A high-end industrial interactive experience exploring precision and heritage. Features tactile slicing mechanics and bold aggressive minimalism.",
+    date: "Mar 16, 2026",
+    image: "/thumbnails/exp39.png",
+    category: "Physics & UI",
+    tags: ["Tactile", "Industrial", "Minimalism"],
+  },
+  {
+    id: "40",
+    title: "Soul Seeker",
+    description: "An ethereal RPG-style interactive interface. Control a wandering soul through a generative void, discovering ancient UI monoliths and collecting echoes.",
+    date: "Mar 17, 2026",
+    image: "/thumbnails/exp40.png",
+    category: "Physics & UI",
+    tags: ["RPG", "Procedural", "Interactive HUD"],
+  },
+  {
+    id: "41",
+    title: "Celestial Menagerie",
+    description: "An interactive starry night sky where hidden animal constellations reveal themselves through exploration.",
+    date: "May 20, 2026",
+    image: "/thumbnails/exp41.png",
+    category: "Graphics & Motion",
+    tags: ["Canvas", "Constellations", "Interactive Discovery"],
   }
 ];
 
