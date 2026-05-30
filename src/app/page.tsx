@@ -396,6 +396,33 @@ const experiments = [
     image: "/thumbnails/exp43.png",
     category: "Physics & UI",
     tags: ["Skydiving", "First Person", "Physics"],
+  },
+  {
+    id: "44",
+    title: "Synaptic Genesis",
+    description: "A living neural network that grows, connects, and fires in cascading bioluminescent waves. Move to excite, click to trigger cascade reactions, and hold to birth new neurons into the connectome.",
+    date: "May 29, 2026",
+    image: "/thumbnails/exp44.png",
+    category: "Generative Art",
+    tags: ["Neural Network", "Emergent", "Interactive"],
+  },
+  {
+    id: "45",
+    title: "Chroma Resonance",
+    description: "An interactive ambient soundscape. Brush fields of fluid particles and spawn resonant gravity orbs to compose procedural ambient music with a built-in Web Audio API synthesizer.",
+    date: "May 30, 2026",
+    image: "/thumbnails/exp45.png",
+    category: "WebGL & Canvas",
+    tags: ["Fluid Dynamics", "Web Audio Synth", "Gravity Fields"],
+  },
+  {
+    id: "46",
+    title: "Crayon Racer",
+    description: "A whimsical, child-like interpretation of a classic arcade chase game. Hand-drawn crayon aesthetics, wobbly lines, and bright colors bring this simple interactive car game to life.",
+    date: "May 30, 2026",
+    image: "/thumbnails/exp46.png",
+    category: "Interactions",
+    tags: ["Game", "Canvas", "Hand-drawn"]
   }
 ];
 

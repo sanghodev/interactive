@@ -3,101 +3,84 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import { ArrowLeft, Wind, ArrowDown, ChevronDown } from "lucide-react";
+import { ArrowLeft, ChevronDown, Crosshair, AlertTriangle } from "lucide-react";
 
 // --- Types ---
 interface Cloud {
   x: number;
   y: number;
-  z: number; // Depth for parallax
-  w: number;
-  h: number;
+  z: number; // 0.1 (far) to 1 (near)
+  radius: number;
   opacity: number;
-  speed: number;
-}
-
-interface WindStreak {
-  x: number;
-  y: number;
-  len: number;
-  speed: number;
-  opacity: number;
+  offsetX: number;
 }
 
 interface Particle {
   x: number;
   y: number;
-  vx: number;
-  vy: number;
-  size: number;
-  life: number;
+  z: number;
+  length: number;
+  speed: number;
 }
 
-// --- Constants ---
-const MAX_ALTITUDE = 15000; // feet
-const TERMINAL_VELOCITY = 8; // pixels per frame base speed
-const PARACHUTE_SPEED = 1.5;
-const GROUND_ALTITUDE = 200;
+const MAX_ALTITUDE = 15000;
+const TERMINAL_VELOCITY = 15; 
+const PARACHUTE_SPEED = 2;
+const GROUND_ALTITUDE = 0;
 
-export default function SkydivingExperience() {
+export default function RealisticSkydiving() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [altitude, setAltitude] = useState(MAX_ALTITUDE);
   const [speed, setSpeed] = useState(0);
   const [phase, setPhase] = useState<"freefall" | "parachute" | "landed">("freefall");
-  const [showDeploy, setShowDeploy] = useState(false);
+  const [warning, setWarning] = useState(false);
 
-  const mouseRef = useRef({ x: 0.5, y: 0.5 }); // Normalized 0-1
-  const altRef = useRef(MAX_ALTITUDE);
-  const phaseRef = useRef<"freefall" | "parachute" | "landed">("freefall");
-  const cloudsRef = useRef<Cloud[]>([]);
-  const streaksRef = useRef<WindStreak[]>([]);
-  const particlesRef = useRef<Particle[]>([]);
-  const bodyTiltRef = useRef(0); // -1 to 1
-  const speedRef = useRef(0);
-  const shakeRef = useRef({ x: 0, y: 0 });
+  const stateRef = useRef({
+    alt: MAX_ALTITUDE,
+    speed: 0,
+    phase: "freefall" as "freefall" | "parachute" | "landed",
+    mouseX: 0.5,
+    mouseY: 0.5,
+    tiltX: 0,
+    tiltY: 0,
+    time: 0
+  });
 
   const deployParachute = useCallback(() => {
-    if (phaseRef.current === "freefall" && altRef.current < 8000) {
-      phaseRef.current = "parachute";
+    if (stateRef.current.phase === "freefall" && stateRef.current.alt < 8000) {
+      stateRef.current.phase = "parachute";
       setPhase("parachute");
+      setWarning(false);
     }
   }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d", { alpha: false });
     if (!ctx) return;
 
     let w = (canvas.width = window.innerWidth);
     let h = (canvas.height = window.innerHeight);
 
-    // Init clouds
-    const initClouds = () => {
-      cloudsRef.current = Array.from({ length: 25 }, () => ({
-        x: Math.random() * w,
-        y: Math.random() * h * 2 - h,
-        z: Math.random() * 3 + 0.5,
-        w: Math.random() * 300 + 100,
-        h: Math.random() * 60 + 20,
-        opacity: Math.random() * 0.4 + 0.1,
-        speed: Math.random() * 2 + 1,
-      }));
-    };
+    // Generate Clouds
+    const clouds: Cloud[] = Array.from({ length: 50 }, () => ({
+      x: Math.random() * w,
+      y: Math.random() * h * 2 - h,
+      z: Math.random() * 0.9 + 0.1, // Depth
+      radius: Math.random() * 300 + 150,
+      opacity: Math.random() * 0.25 + 0.05,
+      offsetX: Math.random() * 200 - 100,
+    }));
 
-    // Init wind streaks
-    const initStreaks = () => {
-      streaksRef.current = Array.from({ length: 40 }, () => ({
-        x: Math.random() * w,
-        y: Math.random() * h,
-        len: Math.random() * 80 + 30,
-        speed: Math.random() * 10 + 5,
-        opacity: Math.random() * 0.3 + 0.05,
-      }));
-    };
-
-    initClouds();
-    initStreaks();
+    // Generate Wind Particles for Speed Effect
+    const particles: Particle[] = Array.from({ length: 200 }, () => ({
+      x: Math.random() * w,
+      y: Math.random() * h,
+      z: Math.random(),
+      length: Math.random() * 60 + 20,
+      speed: Math.random() * 15 + 15,
+    }));
 
     const handleResize = () => {
       w = canvas.width = window.innerWidth;
@@ -105,283 +88,221 @@ export default function SkydivingExperience() {
     };
 
     const handleMouseMove = (e: MouseEvent) => {
-      mouseRef.current.x = e.clientX / w;
-      mouseRef.current.y = e.clientY / h;
+      stateRef.current.mouseX = e.clientX / w;
+      stateRef.current.mouseY = e.clientY / h;
     };
 
     window.addEventListener("resize", handleResize);
     window.addEventListener("mousemove", handleMouseMove);
 
     let frameId: number;
-    let time = 0;
+    let lastTime = performance.now();
 
-    const render = () => {
-      time += 0.016;
-      const isFreefall = phaseRef.current === "freefall";
-      const isParachute = phaseRef.current === "parachute";
-      const isLanded = phaseRef.current === "landed";
+    const drawSky = (ctx: CanvasRenderingContext2D, alt: number) => {
+      const altRatio = Math.max(0, alt / MAX_ALTITUDE);
+      // High alt: dark deep blue (near space), Low alt: bright sky blue
+      const topColor = `hsl(215, 80%, ${10 + (1 - altRatio) * 40}%)`;
+      const bottomColor = `hsl(205, 60%, ${30 + (1 - altRatio) * 50}%)`;
+      
+      const grad = ctx.createLinearGradient(0, 0, 0, h);
+      grad.addColorStop(0, topColor);
+      grad.addColorStop(1, bottomColor);
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+    };
 
-      // --- Physics ---
-      const currentSpeed = isFreefall ? TERMINAL_VELOCITY : isParachute ? PARACHUTE_SPEED : 0;
-      speedRef.current += (currentSpeed - speedRef.current) * 0.05;
-
-      if (!isLanded) {
-        altRef.current -= speedRef.current * 3;
-        if (altRef.current <= GROUND_ALTITUDE) {
-          altRef.current = GROUND_ALTITUDE;
-          phaseRef.current = "landed";
-          setPhase("landed");
-        }
-      }
-
-      // Show deploy button when below 8000ft in freefall
-      if (isFreefall && altRef.current < 8000) {
-        setShowDeploy(true);
-      }
-
-      // Auto-deploy at 2000ft
-      if (isFreefall && altRef.current < 2000) {
-        phaseRef.current = "parachute";
-        setPhase("parachute");
-      }
-
-      setAltitude(Math.round(altRef.current));
-      setSpeed(Math.round(speedRef.current * 30));
-
-      // Body tilt from mouse
-      bodyTiltRef.current += ((mouseRef.current.x - 0.5) * 2 - bodyTiltRef.current) * 0.08;
-
-      // Camera shake (stronger in freefall)
-      const shakeIntensity = isFreefall ? 3 : isParachute ? 0.5 : 0;
-      shakeRef.current.x = (Math.random() - 0.5) * shakeIntensity;
-      shakeRef.current.y = (Math.random() - 0.5) * shakeIntensity;
-
-      // --- Rendering ---
+    const drawGround = (ctx: CanvasRenderingContext2D, alt: number, tiltX: number, tiltY: number) => {
+      if (alt > 10000) return; // Ground completely hidden
+      
+      const visibility = Math.min(1, (10000 - alt) / 6000);
+      const scale = 1 + (1 - alt / 10000) * 5; // Scales up dramatically as you fall
+      
       ctx.save();
-      ctx.translate(shakeRef.current.x, shakeRef.current.y);
+      ctx.translate(w / 2, h / 2);
+      ctx.scale(scale, scale);
+      ctx.translate(-w / 2 + tiltX * 150, -h / 2 + tiltY * 150);
+      
+      ctx.globalAlpha = visibility;
+      
+      // Satellite-like terrain colors
+      const grad = ctx.createRadialGradient(w/2, h/2, 50, w/2, h/2, w);
+      grad.addColorStop(0, "#253b15"); // Center dropzone area
+      grad.addColorStop(0.3, "#365922");
+      grad.addColorStop(0.7, "#284a16");
+      grad.addColorStop(1, "#1c360f");
+      ctx.fillStyle = grad;
+      ctx.fillRect(-w, -h, w * 3, h * 3);
 
-      // Sky gradient (changes with altitude)
-      const altPct = altRef.current / MAX_ALTITUDE;
-      const skyTop = `hsl(${210 + altPct * 10}, ${70 + altPct * 20}%, ${Math.max(15, 55 - altPct * 30)}%)`;
-      const skyBot = `hsl(${200}, ${50}%, ${Math.max(40, 75 - altPct * 20)}%)`;
-      const skyGrad = ctx.createLinearGradient(0, 0, 0, h);
-      skyGrad.addColorStop(0, skyTop);
-      skyGrad.addColorStop(1, skyBot);
-      ctx.fillStyle = skyGrad;
-      ctx.fillRect(0, 0, w, h);
-
-      // --- Ground Layer (visible at low altitude) ---
-      if (altRef.current < 5000) {
-        const groundVisibility = 1 - altRef.current / 5000;
-        const groundY = h - (h * 0.3 * groundVisibility);
-
-        // Patchwork terrain
-        ctx.save();
-        ctx.globalAlpha = groundVisibility * 0.8;
-        const groundGrad = ctx.createLinearGradient(0, groundY, 0, h);
-        groundGrad.addColorStop(0, "#5a8c3a");
-        groundGrad.addColorStop(0.5, "#4a7c2f");
-        groundGrad.addColorStop(1, "#3a6c24");
-        ctx.fillStyle = groundGrad;
-        ctx.fillRect(0, groundY, w, h - groundY);
-
-        // Grid lines for perspective
-        ctx.strokeStyle = `rgba(70, 120, 50, ${groundVisibility * 0.4})`;
-        ctx.lineWidth = 1;
-        const gridSpacing = 60;
-        const offsetX = (bodyTiltRef.current * 50 * groundVisibility) % gridSpacing;
-        for (let gx = -gridSpacing + offsetX; gx < w + gridSpacing; gx += gridSpacing) {
-          ctx.beginPath();
-          ctx.moveTo(w / 2, groundY);
-          ctx.lineTo(gx, h);
-          ctx.stroke();
+      // Abstract topography / fields pattern
+      ctx.strokeStyle = "rgba(0,0,0,0.2)";
+      ctx.lineWidth = 1;
+      const gridSize = 150;
+      for (let x = -w; x < w * 2; x += gridSize) {
+        for (let y = -h; y < h * 2; y += gridSize) {
+          if ((x + y) % 300 === 0) {
+            ctx.fillStyle = "rgba(255,255,255,0.03)";
+            ctx.fillRect(x, y, gridSize, gridSize);
+          }
+          ctx.strokeRect(x, y, gridSize, gridSize);
         }
-        for (let gy = groundY; gy < h; gy += gridSpacing * 0.5) {
-          ctx.beginPath();
-          ctx.moveTo(0, gy);
-          ctx.lineTo(w, gy);
-          ctx.stroke();
-        }
-        ctx.restore();
       }
 
-      // --- Clouds ---
-      cloudsRef.current.forEach((cloud) => {
-        // Move clouds upward (simulating falling through them)
-        cloud.y += speedRef.current * cloud.z * 1.5;
-        cloud.x += bodyTiltRef.current * cloud.z * -2; // Parallax tilt
+      // Dropzone Target
+      ctx.beginPath();
+      ctx.arc(w/2, h/2, 40, 0, Math.PI * 2);
+      ctx.strokeStyle = "rgba(255, 60, 60, 0.7)";
+      ctx.lineWidth = 3;
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(w/2, h/2, 8, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(255, 60, 60, 0.9)";
+      ctx.fill();
 
-        // Reset clouds that go off screen
-        if (cloud.y > h + 100) {
-          cloud.y = -cloud.h - Math.random() * 200;
-          cloud.x = Math.random() * w;
-          cloud.w = Math.random() * 300 + 100;
-          cloud.opacity = Math.random() * 0.4 + 0.1;
-        }
-        if (cloud.y < -cloud.h - 300) {
-          cloud.y = h + Math.random() * 200;
-          cloud.x = Math.random() * w;
+      ctx.restore();
+    };
+
+    const drawClouds = (ctx: CanvasRenderingContext2D, speed: number, tiltX: number, tiltY: number) => {
+      clouds.forEach((c) => {
+        // Clouds move up as you fall down
+        c.y -= speed * c.z * 1.8;
+        
+        // Parallax horizontal movement based on tilt
+        const px = c.x + tiltX * c.z * 400 + c.offsetX;
+        const py = c.y + tiltY * c.z * 400;
+
+        if (c.y < -c.radius * 2) {
+          c.y = h + c.radius;
+          c.x = Math.random() * w;
         }
 
-        // Render cloud
-        ctx.save();
-        ctx.globalAlpha = cloud.opacity * (isFreefall ? 1 : 0.6);
-        ctx.fillStyle = "white";
-        ctx.shadowBlur = 40;
-        ctx.shadowColor = "rgba(255, 255, 255, 0.3)";
-
-        // Organic cloud shape (multiple ellipses)
-        const cx = cloud.x;
-        const cy = cloud.y;
-        for (let i = 0; i < 4; i++) {
-          ctx.beginPath();
-          ctx.ellipse(
-            cx + (i - 1.5) * (cloud.w * 0.25),
-            cy + Math.sin(i * 1.5) * 8,
-            cloud.w * 0.3,
-            cloud.h * (0.6 + Math.sin(i) * 0.3),
-            0, 0, Math.PI * 2
-          );
-          ctx.fill();
-        }
-        ctx.restore();
+        // Soft radial gradient for realistic volumetric cloud look
+        const grad = ctx.createRadialGradient(px, py, 0, px, py, c.radius);
+        grad.addColorStop(0, `rgba(255, 255, 255, ${c.opacity})`);
+        grad.addColorStop(0.4, `rgba(255, 255, 255, ${c.opacity * 0.8})`);
+        grad.addColorStop(1, `rgba(255, 255, 255, 0)`);
+        
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(px, py, c.radius, 0, Math.PI * 2);
+        ctx.fill();
       });
+    };
 
-      // --- Wind Streaks ---
+    const drawParticles = (ctx: CanvasRenderingContext2D, speed: number, cx: number, cy: number, phase: string) => {
+      if (speed < 1 || phase === "landed") return;
+      
+      ctx.save();
+      const speedRatio = speed / TERMINAL_VELOCITY;
+      
+      particles.forEach((p) => {
+        // Calculate vector from center for radial blur effect
+        const dx = p.x - cx;
+        const dy = p.y - cy;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        
+        // Push particles outward from center
+        p.x += (dx / Math.max(dist, 1)) * p.speed * speedRatio * p.z;
+        p.y += (dy / Math.max(dist, 1)) * p.speed * speedRatio * p.z;
+
+        // Reset if out of bounds
+        if (p.x < 0 || p.x > w || p.y < 0 || p.y > h || dist > Math.max(w, h)) {
+          const angle = Math.random() * Math.PI * 2;
+          const r = Math.random() * 150 + 50; // Spawn near center
+          p.x = cx + Math.cos(angle) * r;
+          p.y = cy + Math.sin(angle) * r;
+        }
+
+        // Fades in as it gets closer to edge
+        const alpha = Math.min(0.6, (dist / (w/2)) * 0.8) * speedRatio;
+        
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+        ctx.lineTo(p.x - (dx / Math.max(dist, 1)) * p.length * speedRatio, p.y - (dy / Math.max(dist, 1)) * p.length * speedRatio);
+        ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+        ctx.lineWidth = p.z * 1.5;
+        ctx.stroke();
+      });
+      ctx.restore();
+    };
+
+    const render = (currentTime: number) => {
+      const dt = (currentTime - lastTime) / 1000;
+      lastTime = currentTime;
+      stateRef.current.time += dt;
+
+      const state = stateRef.current;
+      const isFreefall = state.phase === "freefall";
+      const isParachute = state.phase === "parachute";
+      const isLanded = state.phase === "landed";
+
+      // Physics integration
+      const targetSpeed = isFreefall ? TERMINAL_VELOCITY : isParachute ? PARACHUTE_SPEED : 0;
+      state.speed += (targetSpeed - state.speed) * dt * 2.5; // Smooth deceleration
+      
       if (!isLanded) {
-        const streakSpeedMult = isFreefall ? 1 : 0.2;
-        streaksRef.current.forEach((streak) => {
-          streak.y += streak.speed * speedRef.current * streakSpeedMult;
-          streak.x += bodyTiltRef.current * -5;
-
-          if (streak.y > h + 50) {
-            streak.y = -streak.len;
-            streak.x = Math.random() * w;
-          }
-
-          ctx.beginPath();
-          ctx.moveTo(streak.x, streak.y);
-          ctx.lineTo(streak.x + bodyTiltRef.current * -3, streak.y + streak.len * speedRef.current * 0.5);
-          ctx.strokeStyle = `rgba(255, 255, 255, ${streak.opacity * speedRef.current * 0.15})`;
-          ctx.lineWidth = 1;
-          ctx.stroke();
-        });
-      }
-
-      // --- Skydiver Body (First Person Arms/Legs hints) ---
-      if (!isLanded) {
-        ctx.save();
-        ctx.translate(w / 2, h * 0.75);
-        ctx.rotate(bodyTiltRef.current * 0.15);
-
-        // Left arm
-        ctx.strokeStyle = "rgba(20, 20, 20, 0.6)";
-        ctx.lineWidth = 6;
-        ctx.lineCap = "round";
-        ctx.beginPath();
-        ctx.moveTo(-80 - bodyTiltRef.current * 20, 30);
-        ctx.quadraticCurveTo(-160 - bodyTiltRef.current * 30, -20, -200 - bodyTiltRef.current * 40, -60 + Math.sin(time * 3) * 8);
-        ctx.stroke();
-
-        // Right arm
-        ctx.beginPath();
-        ctx.moveTo(80 - bodyTiltRef.current * 20, 30);
-        ctx.quadraticCurveTo(160 - bodyTiltRef.current * 30, -20, 200 - bodyTiltRef.current * 40, -60 + Math.cos(time * 3) * 8);
-        ctx.stroke();
-
-        // Gloves
-        ctx.fillStyle = "rgba(30, 30, 30, 0.7)";
-        ctx.beginPath();
-        ctx.arc(-200 - bodyTiltRef.current * 40, -60 + Math.sin(time * 3) * 8, 8, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(200 - bodyTiltRef.current * 40, -60 + Math.cos(time * 3) * 8, 8, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Left leg
-        ctx.strokeStyle = "rgba(25, 25, 25, 0.5)";
-        ctx.lineWidth = 8;
-        ctx.beginPath();
-        ctx.moveTo(-50, 80);
-        ctx.quadraticCurveTo(-90, 160, -120 + Math.sin(time * 2) * 5, 250);
-        ctx.stroke();
-
-        // Right leg
-        ctx.beginPath();
-        ctx.moveTo(50, 80);
-        ctx.quadraticCurveTo(90, 160, 120 + Math.cos(time * 2) * 5, 250);
-        ctx.stroke();
-
-        // Boots
-        ctx.fillStyle = "rgba(20, 20, 20, 0.6)";
-        ctx.beginPath();
-        ctx.ellipse(-120 + Math.sin(time * 2) * 5, 255, 14, 8, -0.3, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.ellipse(120 + Math.cos(time * 2) * 5, 255, 14, 8, 0.3, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.restore();
-
-        // --- Parachute ---
-        if (isParachute) {
-          ctx.save();
-          ctx.translate(w / 2 + bodyTiltRef.current * 20, 0);
-
-          // Canopy
-          const canopyW = 350;
-          const canopyH = 120;
-          const canopyY = h * 0.1;
-          const sway = Math.sin(time * 1.5) * 10;
-
-          ctx.fillStyle = "rgba(220, 60, 60, 0.85)";
-          ctx.beginPath();
-          ctx.ellipse(sway, canopyY, canopyW / 2, canopyH, 0, Math.PI, 0);
-          ctx.fill();
-
-          // Stripe
-          ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
-          ctx.beginPath();
-          ctx.ellipse(sway, canopyY, canopyW * 0.15, canopyH * 0.9, 0, Math.PI, 0);
-          ctx.fill();
-
-          // Lines
-          ctx.strokeStyle = "rgba(80, 80, 80, 0.5)";
-          ctx.lineWidth = 1;
-          for (let i = -3; i <= 3; i++) {
-            ctx.beginPath();
-            ctx.moveTo(sway + i * (canopyW * 0.12), canopyY);
-            ctx.lineTo(bodyTiltRef.current * 10, h * 0.72);
-            ctx.stroke();
-          }
-
-          ctx.restore();
+        state.alt -= state.speed * dt * 150; // Scaled altitude descent rate
+        if (state.alt <= GROUND_ALTITUDE) {
+          state.alt = GROUND_ALTITUDE;
+          state.phase = "landed";
+          setPhase("landed");
+          setWarning(false);
         }
       }
 
-      // --- Vignette ---
-      const vigGrad = ctx.createRadialGradient(w / 2, h / 2, w * 0.3, w / 2, h / 2, w * 0.8);
-      vigGrad.addColorStop(0, "transparent");
-      vigGrad.addColorStop(1, `rgba(0, 0, 0, ${isFreefall ? 0.5 : 0.3})`);
-      ctx.fillStyle = vigGrad;
-      ctx.fillRect(0, 0, w, h);
-
-      // --- Motion Blur Edges ---
+      // Altitude triggers
       if (isFreefall) {
-        const blurGrad = ctx.createRadialGradient(w / 2, h / 2, w * 0.35, w / 2, h / 2, w * 0.55);
-        blurGrad.addColorStop(0, "transparent");
-        blurGrad.addColorStop(1, "rgba(200, 220, 255, 0.08)");
-        ctx.fillStyle = blurGrad;
-        ctx.fillRect(0, 0, w, h);
+        if (state.alt < 3500 && state.alt > 1500) {
+          setWarning(true);
+        } else {
+          setWarning(false);
+        }
+        if (state.alt <= 1500) {
+          // Auto deploy hard deck
+          state.phase = "parachute";
+          setPhase("parachute");
+          setWarning(false);
+        }
       }
 
-      ctx.restore(); // End shake transform
+      setAltitude(Math.max(0, Math.round(state.alt)));
+      setSpeed(Math.round(state.speed * 12)); // Approx conversion to mph
 
+      // Camera Tilt Dynamics based on mouse
+      const targetTiltX = (state.mouseX - 0.5) * 2;
+      const targetTiltY = (state.mouseY - 0.5) * 2;
+      state.tiltX += (targetTiltX - state.tiltX) * dt * 4;
+      state.tiltY += (targetTiltY - state.tiltY) * dt * 4;
+
+      // Screen Shake (high during freefall, minimal during parachute)
+      const shakeIntensity = isFreefall ? Math.pow(state.speed / TERMINAL_VELOCITY, 2) * 6 : isParachute ? 0.5 : 0;
+      const sx = (Math.random() - 0.5) * shakeIntensity;
+      const sy = (Math.random() - 0.5) * shakeIntensity;
+
+      ctx.save();
+      ctx.translate(sx, sy);
+
+      // Rendering Pipeline
+      drawSky(ctx, state.alt);
+      drawGround(ctx, state.alt, state.tiltX, state.tiltY);
+      drawClouds(ctx, state.speed, state.tiltX, state.tiltY);
+      
+      const cx = w / 2 + state.tiltX * 150;
+      const cy = h / 2 + state.tiltY * 150;
+      drawParticles(ctx, state.speed, cx, cy, state.phase);
+
+      // Helmet Vignette overlay
+      const vigGrad = ctx.createRadialGradient(w/2, h/2, Math.min(w, h) * 0.35, w/2, h/2, Math.max(w, h) * 0.8);
+      vigGrad.addColorStop(0, "transparent");
+      vigGrad.addColorStop(0.7, "rgba(0,0,0,0.5)");
+      vigGrad.addColorStop(1, "rgba(0,0,0,0.95)");
+      ctx.fillStyle = vigGrad;
+      ctx.fillRect(-w, -h, w*3, h*3);
+
+      ctx.restore();
       frameId = requestAnimationFrame(render);
     };
 
     frameId = requestAnimationFrame(render);
-
     return () => {
       window.removeEventListener("resize", handleResize);
       window.removeEventListener("mousemove", handleMouseMove);
@@ -390,139 +311,125 @@ export default function SkydivingExperience() {
   }, []);
 
   return (
-    <div className="relative w-full h-screen bg-black text-white font-sans overflow-hidden cursor-none">
+    <div className="relative w-full h-screen bg-black text-white font-mono overflow-hidden cursor-crosshair selection:bg-transparent">
       <canvas ref={canvasRef} className="absolute inset-0 z-0" />
+      
+      {/* Helmet Visor Reflection & Chromatic Aberration simulation */}
+      <div 
+        className="absolute inset-0 z-10 pointer-events-none mix-blend-screen opacity-20 transition-all duration-1000"
+        style={{
+          boxShadow: phase === "freefall" ? "inset 0 0 150px rgba(100, 150, 255, 0.6)" : "inset 0 0 50px rgba(100, 255, 100, 0.2)"
+        }}
+      />
+      
+      {/* Dirt/Scratches on visor (subtle noise overlay) */}
+      <div className="absolute inset-0 z-10 pointer-events-none opacity-10 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] mix-blend-overlay" />
 
-      {/* HUD Overlay */}
-      <div className="absolute inset-0 z-10 pointer-events-none p-6 md:p-10 flex flex-col justify-between">
-        {/* Top Bar */}
-        <header className="flex justify-between items-start">
+      {/* High-Tech Tactical HUD */}
+      <div className="absolute inset-0 z-20 pointer-events-none flex flex-col justify-between p-6 md:p-12">
+        
+        {/* Top HUD Area */}
+        <div className="flex justify-between items-start">
           <Link href="/" className="pointer-events-auto">
             <motion.div
-              whileHover={{ scale: 1.05 }}
-              className="flex items-center gap-3 px-4 py-2 bg-black/30 backdrop-blur-md border border-white/10 rounded-lg"
+              whileHover={{ scale: 1.05, backgroundColor: "rgba(255,255,255,0.15)" }}
+              className="flex items-center gap-2 px-4 py-2 bg-black/40 backdrop-blur-md border border-white/20 rounded-sm text-white/80 hover:text-white transition-colors shadow-lg"
             >
               <ArrowLeft className="w-4 h-4" />
-              <span className="text-[10px] tracking-[0.3em] uppercase font-bold">Exit Jump</span>
+              <span className="text-xs uppercase tracking-widest font-bold">Abort Jump</span>
             </motion.div>
           </Link>
 
-          {/* Altitude Readout */}
-          <div className="flex flex-col items-end gap-1 bg-black/30 backdrop-blur-md border border-white/10 rounded-lg px-5 py-3">
-            <span className="text-[9px] tracking-[0.3em] uppercase text-white/50">Altitude</span>
-            <div className="flex items-baseline gap-1">
-              <span className="text-3xl font-black tabular-nums tracking-tight">
-                {altitude.toLocaleString()}
-              </span>
-              <span className="text-xs font-bold text-white/50">ft</span>
+          <div className="flex flex-col items-end gap-6">
+            {/* Altitude Module */}
+            <div className="flex flex-col items-end bg-black/20 backdrop-blur-sm p-3 rounded-sm border-r-2 border-green-400">
+              <span className="text-[10px] text-green-400 tracking-[0.3em] mb-1 font-bold">ALTITUDE [FT]</span>
+              <div className="text-5xl md:text-6xl font-black tracking-tighter tabular-nums drop-shadow-[0_0_15px_rgba(74,222,128,0.6)]">
+                {altitude.toString().padStart(5, '0')}
+              </div>
+            </div>
+            
+            {/* Velocity Module */}
+            <div className="flex flex-col items-end bg-black/20 backdrop-blur-sm p-3 rounded-sm border-r-2 border-cyan-400">
+              <span className="text-[10px] text-cyan-400 tracking-[0.3em] mb-1 font-bold">VELOCITY [MPH]</span>
+              <div className="text-3xl md:text-4xl font-black tracking-tighter tabular-nums drop-shadow-[0_0_15px_rgba(34,211,238,0.6)]">
+                {speed.toString().padStart(3, '0')}
+              </div>
             </div>
           </div>
-        </header>
+        </div>
 
-        {/* Center Phase Indicator */}
-        <AnimatePresence mode="wait">
-          {phase === "freefall" && (
-            <motion.div
-              key="freefall"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="flex flex-col items-center gap-2"
-            >
-              <Wind className="w-6 h-6 text-white/30 animate-pulse" />
-              <span className="text-[10px] tracking-[0.5em] uppercase text-white/30 font-bold">
-                Free Fall
-              </span>
-            </motion.div>
-          )}
-          {phase === "parachute" && (
-            <motion.div
-              key="chute"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0 }}
-              className="flex flex-col items-center gap-2"
-            >
-              <span className="text-xl font-black tracking-widest text-green-400 uppercase">
-                Canopy Deployed
-              </span>
-              <span className="text-[10px] tracking-widest text-white/40">Gliding to safety</span>
-            </motion.div>
-          )}
-          {phase === "landed" && (
-            <motion.div
-              key="landed"
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex flex-col items-center gap-3"
-            >
-              <span className="text-4xl font-black tracking-widest text-white uppercase">
-                Landed
-              </span>
-              <span className="text-sm text-white/50">Safe on the ground.</span>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* Center Reticle (Jet fighter style) */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-30 flex items-center justify-center">
+          <Crosshair className="w-24 h-24 text-white" strokeWidth={0.5} />
+          <div className="absolute w-64 h-[1px] bg-white/20" />
+          <div className="absolute h-64 w-[1px] bg-white/20" />
+          <div className="absolute w-40 h-40 border border-white/10 rounded-full" />
+        </div>
 
-        {/* Bottom HUD */}
-        <footer className="flex justify-between items-end">
-          {/* Speed */}
-          <div className="bg-black/30 backdrop-blur-md border border-white/10 rounded-lg px-4 py-2.5">
-            <span className="text-[9px] tracking-[0.2em] uppercase text-white/40 block">Speed</span>
-            <span className="text-lg font-black tabular-nums">{speed}</span>
-            <span className="text-[9px] text-white/40 ml-1">mph</span>
-          </div>
-
-          {/* Altitude Bar (vertical) */}
-          <div className="flex flex-col items-center gap-2">
-            <div className="relative w-2 h-40 bg-white/10 border border-white/10 rounded-full overflow-hidden">
+        {/* Dynamic Status / Warnings Display */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 translate-y-32 flex flex-col items-center">
+          <AnimatePresence mode="wait">
+            {warning && (
               <motion.div
-                className="absolute bottom-0 w-full rounded-full"
-                animate={{
-                  height: `${(altitude / MAX_ALTITUDE) * 100}%`,
-                  backgroundColor:
-                    altitude > 5000
-                      ? "rgba(100, 200, 255, 0.8)"
-                      : altitude > 2000
-                      ? "rgba(255, 200, 50, 0.8)"
-                      : "rgba(255, 80, 80, 0.8)",
-                }}
-                transition={{ duration: 0.3 }}
-              />
-            </div>
-            <ArrowDown className="w-3 h-3 text-white/30 animate-bounce" />
-          </div>
+                key="warning"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                className="flex items-center gap-3 text-red-500 bg-red-950/40 px-6 py-3 rounded-sm border border-red-500/80 backdrop-blur-md animate-[pulse_0.5s_ease-in-out_infinite] shadow-[0_0_30px_rgba(239,68,68,0.4)]"
+              >
+                <AlertTriangle className="w-6 h-6" />
+                <span className="text-lg font-black tracking-[0.2em]">PULL ALTITUDE</span>
+              </motion.div>
+            )}
+            
+            {phase === "parachute" && (
+              <motion.div
+                key="deployed"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-green-400 text-xl tracking-[0.3em] font-black drop-shadow-[0_0_15px_rgba(74,222,128,0.8)] bg-black/30 px-6 py-2 rounded backdrop-blur-sm border border-green-500/30"
+              >
+                CANOPY DEPLOYED
+              </motion.div>
+            )}
 
-          {/* Deploy Button */}
-          <div className="h-14">
-            <AnimatePresence>
-              {showDeploy && phase === "freefall" && (
-                <motion.button
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.5 }}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={deployParachute}
-                  className="pointer-events-auto flex items-center gap-3 px-6 py-3 bg-red-600/80 backdrop-blur-md border border-red-400/30 rounded-xl text-white font-black uppercase tracking-wider text-sm shadow-[0_0_30px_rgba(220,50,50,0.4)] hover:bg-red-500/90 transition-colors animate-pulse"
-                >
-                  <ChevronDown className="w-5 h-5" />
-                  Deploy Chute
-                </motion.button>
-              )}
-            </AnimatePresence>
-          </div>
-        </footer>
-      </div>
+            {phase === "landed" && (
+              <motion.div
+                key="landed"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="text-white text-4xl tracking-[0.4em] font-black drop-shadow-[0_0_20px_rgba(255,255,255,0.9)] bg-black/50 px-8 py-4 rounded-sm backdrop-blur-md border border-white/20"
+              >
+                TOUCHDOWN
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
 
-      {/* Crosshair cursor */}
-      <div className="fixed inset-0 z-20 pointer-events-none flex items-center justify-center">
-        <div className="w-4 h-4 border border-white/20 rounded-full" />
-        <div className="absolute w-0.5 h-3 bg-white/15 -translate-y-4" />
-        <div className="absolute w-0.5 h-3 bg-white/15 translate-y-4" />
-        <div className="absolute w-3 h-0.5 bg-white/15 -translate-x-4" />
-        <div className="absolute w-3 h-0.5 bg-white/15 translate-x-4" />
+        {/* Bottom HUD / Deploy Action */}
+        <div className="flex justify-center items-end h-32">
+          <AnimatePresence>
+            {phase === "freefall" && (
+              <motion.button
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 30 }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={deployParachute}
+                className="pointer-events-auto relative overflow-hidden bg-red-600/90 backdrop-blur-xl border-2 border-red-400 text-white px-10 py-5 rounded-sm shadow-[0_0_30px_rgba(220,38,38,0.6)] hover:bg-red-500 transition-all flex items-center gap-3"
+              >
+                <ChevronDown className="w-8 h-8 animate-bounce" />
+                <span className="text-xl font-black tracking-[0.2em]">DEPLOY CHUTE</span>
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-[200%] hover:translate-x-[200%] transition-transform duration-1000 ease-in-out" />
+              </motion.button>
+            )}
+          </AnimatePresence>
+        </div>
+
       </div>
     </div>
   );
 }
+
