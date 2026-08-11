@@ -423,8 +423,36 @@ const experiments = [
     image: "/thumbnails/exp46.png",
     category: "Interactions",
     tags: ["Game", "Canvas", "Hand-drawn"]
+  },
+  {
+    id: "47",
+    title: "Cymatic Resonance Sandbox",
+    description: "A gorgeous simulation of acoustic cymatics. Arrange 15,000 sand particles on a vibrating metal resonance plate. Sweep frequencies, toggle circular/square geometry, place dampening pegs, and synthesize real-time harmonic tones via Web Audio API. Supports both 2D physics and full 3D volumetric plate deformation.",
+    date: "Jun 05, 2026",
+    image: "/thumbnails/exp47.png",
+    category: "WebGL & Canvas",
+    tags: ["Canvas", "Three.js", "Web Audio API", "Resonance Physics"]
+  },
+  {
+    id: "48",
+    title: "Lumen — Chromatic Field",
+    description: "A living field of light shaped by your presence. Bend thousands of luminous particles, release gravity waves, shift the spectrum, and hear the atmosphere respond through generative spatial sound.",
+    date: "Aug 07, 2026",
+    image: "/thumbnails/exp48.png",
+    category: "Generative Art",
+    tags: ["Canvas", "Particle Field", "Web Audio API", "Generative Light"]
+  },
+  {
+    id: "49",
+    title: "Pastel Probability",
+    description: "A quiet quantum film study in soft color. Move through superposed video states, reveal interference patterns, and click to observe many possibilities becoming one.",
+    date: "Aug 11, 2026",
+    image: "/thumbnails/exp49.png",
+    category: "Video & Interaction",
+    tags: ["Quantum", "Video", "Superposition", "Pastel"]
   }
 ];
+
 
 // Animation variants
 const containerVariants: Variants = {

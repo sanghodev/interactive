@@ -10,6 +10,8 @@
 :root {
   --background: #050505;
   --foreground: #f8f8f8;
+  --font-geist-sans: Inter, Roboto, "Helvetica Neue", "Arial Nova", "Nimbus Sans", Arial, sans-serif;
+  --font-geist-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
   
   --glass-bg: rgba(255, 255, 255, 0.03);
   --glass-border: rgba(255, 255, 255, 0.08);
@@ -19,7 +21,7 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Inter, Roboto, "Helvetica Neue", "Arial Nova", "Nimbus Sans", Arial, sans-serif;
+  font-family: var(--font-geist-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
